@@ -8,4 +8,6 @@
    <input type="password" name="password">
    <br>
    <button>Log in</button>
+   <br>
+   <a href="{{ route('register') }}">Register"></a>
 </form>

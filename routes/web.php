@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('login', [AuthController::class, 'login'])->name('login');
 Route::post('login', [AuthController::class, 'processLogin'])->name('process_login');
-
+Route::get('register', [AuthController::class, 'register'])->name('register');
+Route::post('register', [AuthController::class, 'processRegister'])->name('process_register');
 
 Route::group([
     'middleware' => \App\Http\Middleware\CheckLoginMiddleware::class,
