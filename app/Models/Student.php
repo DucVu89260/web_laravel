@@ -2,40 +2,63 @@
 
 namespace App\Models;
 
-use DateTime;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Enums\StudentStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
 {
     use HasFactory;
-    public $timestamps = false;
 
-    protected function getFullName(): Attribute
+    protected $fillable = [
+        'name',
+        'gender',
+        'birth_date',
+        'status',
+        'avatar',
+        'course_id',
+    ];
+
+    protected $casts = [
+        'status' => 'integer',
+    ];
+
+    public function course()
     {
-        return Attribute::make(
-            get: fn ($value, $attributes) => $attributes['first_name'] . ' ' . $attributes['last_name'],
-        );
+        return $this->belongsTo(Course::class);
     }
 
-    protected function getAge(): Attribute
+    public function getAgeAttribute(): int
     {
-        return Attribute::make(
-            get: function ($value, $attributes){
-                $date = new DateTime($attributes['birthdate']);
-                $now = new DateTime();
-                return $now->diff($date)->y;
-            },
-        );
+        return date_diff(date_create($this->birth_date), date_create('now'))->y;
     }
 
-    protected function genderName(): Attribute
+    public function getYearCreatedAtAttribute()
     {
-        return Attribute::make(
-            get: function ($value, $attributes){
-                return ($attributes['gender'] == '1') ? 'Male' : 'Female';
-            },
-        );
+        // return $this->create_at-> date_format('Y');
+        // return date_format(date_create($this->created_at), 'Y');
+        return Carbon::now()->format('Y');
+    }
+
+    public function getGenderNameAttribute()
+    {   
+        return $this->gender === 0 ? 'Female' : 'Male';
+    }
+
+    public function getStatusNameAttribute()
+    {   
+        return StudentStatusEnum::getKeyByValue($this->status);
+    }
+
+    public function filterStatus(int $status)
+    {
+        return $this->where('status', $status);
+    }
+
+    public function getAvatarAttribute()
+    {
+        //
     }
 }

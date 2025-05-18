@@ -2,56 +2,77 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Course\DestroyRequest;
+use App\Http\Requests\Course\StoreRequest;
+use App\Http\Requests\Course\UpdateRequest;
 use App\Models\Course;
-use App\Http\Requests\StoreCourseRequest;
-use App\Http\Requests\UpdateCourseRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 
 class CourseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    private $model;
+
+    public function __construct()
+    {   
+        $this->model = new Course();
+
+        $routeName  = request()->route()->getName();
+
+        $arr        = explode('.', $routeName);
+        $arr        = array_map('ucfirst', $arr);
+        $title      = implode(' - ', $arr);
+
+        View::share('title', $title);
+
+    }
+
+    public function index(Request $request)
     {
-        $data = Course::query()->get();
+        $search = $request->get('q');
+        
+        $data = Course::withCount('students');
+
+        $data = Course::query()
+        ->where('name','like','%'.$search.'%')
+        ->paginate(4)
+        ->appends(['q' => $search]);
+
+        // $data->appends(['q' => $search]);
+
         return view('course.index', [
-            'data'=> $data,
+            'data' => $data,
+            'search' => $search,
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    public function apiName(Request $request)
+    {   
+        return $this->model
+        ->where('name', 'like', '%'.$request->get('q').'%')
+        ->get([
+            'id',
+            'name',
+        ]);
+    }
+
     public function create()
     {
         return view('course.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreRequest $request)
     {
         // $object = new Course();
         // $object->fill($request->except('_token'));
         // $object->save();
 
-        Course::create($request->except('_token'));
+
+        $this->model::create($request->validated());
         
         return redirect()->route('courses.index')->with('success', 'Course created successfully'); 
     }
 
-    /**
-     * Display the specified resource.
-     */
-    // public function show(Course $course)
-    // {
-    // }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Course $course)
     {
         // $object = Course::where('id', $course->id)->first();
@@ -61,36 +82,41 @@ class CourseController extends Controller
             'each' => $course,
         ]);
     }
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Course $course)
+
+    public function show(Course $course)
     {
-        // $request->validate();
 
-        // Course::where('id', $course->id)
-        // ->update($request -> except('_token', '_method'));
+    }
 
-        $course->update($request->except(
-            '_token',
-            '_method'
-        ));
+    public function update(UpdateRequest $request, $courseId)
+    {
 
-        // $course->fill($request->except('_token'));
-        // $course->save();
+        // $this->model::query()
+        //     ->where('id', $courseId)
+        //     ->update($request->validated());
+
+        $object = $this->model::find($courseId);
+        $object->fill($request->validated());
+        $object->save();
 
         return redirect()->route('courses.index')->with('success', 'Course updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Course $course)
-    {
-        // Course::destroy($course->id);
-        // Course::where('id', $course->id)->delete();
-        // dd($course);
-        $course->delete();
+
+    public function destroy(DestroyRequest $request, $courseId)
+    {   
+
+        $this->model::destroy($courseId);
+
+        //  $this->model::where('id', $courseId)->delete();
+
+
+        // $arr = [];
+        // $arr['status'] = 'true';
+        // $arr['message'] = '';
+
+        // return response($arr, 200);
+
         return redirect()->route('courses.index')->with('success', 'Course deleted successfully');
     }
 }
